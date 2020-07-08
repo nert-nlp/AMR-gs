@@ -1,13 +1,17 @@
 # encoding=utf8
+import json
 import re
 import random
+from collections import defaultdict
+
+from parser.amr import AMR
 
 number_regexp = re.compile(r'^-?(\d)+(\.\d+)?$')
 abstract_regexp0 = re.compile(r'^([A-Z]+_)+\d+$')
 abstract_regexp1 = re.compile(r'^\d0*$')
 discard_regexp = re.compile(r'^n(\d+)?$')
 
-attr_value_set = set(['-', '+', 'interrogative', 'imperative', 'expressive'])
+attr_value_set = {'-', '+', 'interrogative', 'imperative', 'expressive'}
 
 def _is_attr_form(x):
     return (x in attr_value_set or x.endswith('_') or number_regexp.match(x) is not None)
@@ -119,3 +123,39 @@ class AMRGraph(object):
                     edge.append((name2pos[x], name2pos[y], r)) # x -> y: r
             visited.add(x)
         return [self.name2concept[x] for x in queue], edge, not_connected
+
+
+    @staticmethod
+    def parse_json(line):
+        amr_json = json.loads(line)
+        node_name_list = [str(node['id']) for node in amr_json['nodes']]
+        node_value_list = [node['label'] for node in amr_json['nodes']]
+        relation_dict = defaultdict(list)
+        attribute_dict = defaultdict(list)
+
+        exceptions = {"prep-on-behalf-of", "prep-out-of", "consist-of"}
+        def update_triple(node_relation_dict, triple):
+            u, r, v = triple
+            if r.endswith("-of") and not r in exceptions:
+                node_relation_dict[v].append((r[:-3], u))
+            elif r == "mod":
+                node_relation_dict[v].append(("domain", u))
+            else:
+                node_relation_dict[u].append((r, v))
+
+        if 'edges' in amr_json:
+            for edge in amr_json['edges']:
+                s,r,t = str(edge['source']), edge['label'], str(edge['target'])
+                update_triple(relation_dict, (s,r,t))
+
+        for node in amr_json['nodes']:
+            if 'properties' in node:
+                rs = node['properties']
+                atts = node['values']
+                for r,att in zip(rs,atts):
+                    update_triple(attribute_dict, (str(node['id']),r,att))
+
+        relation_list = [relation_dict[k] for k in node_name_list]
+        attribute_list = [attribute_dict[k] for k in node_name_list]
+
+        return AMRGraph(AMR(node_name_list, node_value_list, relation_list, attribute_list))

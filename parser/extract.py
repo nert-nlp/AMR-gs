@@ -15,26 +15,13 @@ class AMRIO:
     def read(file_path):
         with open(file_path, encoding='utf-8') as f:
             for line in f:
-                line = line.rstrip()
-                if line.startswith('# ::id '):
-                    amr_id = line[len('# ::id '):]
-                elif line.startswith('# ::snt '):
-                    sentence = line[len('# ::snt '):]
-                elif line.startswith('# ::tokens '):
-                    tokens = json.loads(line[len('# ::tokens '):])
-                elif line.startswith('# ::lemmas '):
-                    lemmas = json.loads(line[len('# ::lemmas '):])
-                    lemmas = [ le if _is_abs_form(le) else le.lower() for le in lemmas]
-                elif line.startswith('# ::pos_tags '):
-                    pos_tags = json.loads(line[len('# ::pos_tags '):])
-                elif line.startswith('# ::ner_tags '):
-                    ner_tags = json.loads(line[len('# ::ner_tags '):])
-                elif line.startswith('# ::abstract_map '):
-                    abstract_map = json.loads(line[len('# ::abstract_map '):])
-                    graph_line = AMR.get_amr_line(f)
-                    amr = AMR.parse_AMR_line(graph_line)
-                    myamr = AMRGraph(amr)
-                    yield tokens, lemmas, pos_tags, ner_tags, myamr
+                amr_json = json.loads(line)
+                tokens = amr_json['tokens']
+                lemmas = amr_json['lemmas']
+                pos_tags = amr_json['pos']
+                ner_tags = ner_tags['ner']
+                myamr = AMRGraph.parse_json(line)
+                yield tokens, lemmas, pos_tags, ner_tags, myamr
 
 class LexicalMap(object):
 

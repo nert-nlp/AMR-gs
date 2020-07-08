@@ -21,18 +21,12 @@ def main():
             ner = []
             pos = []
             for sent in doc.sentences:
-                entity_types = [e.type for e in sent.entities]
-                entity_ids = [[w.id for w in e.words] for e in sent.entities]
-                for word in sent.words:
-                    tokens.append(word.text)
-                    lemmas.append(word.lemma)
-                    pos.append(word.pos)
-                    entity_type = 'O'
-                    for span, type in zip(entity_ids, entity_types):
-                        if word.id in span:
-                            entity_type = type
-                            break
-                    ner.append(entity_type)
+                for token in sent.tokens:
+                    for word in token.words:
+                        tokens.append(word.text)
+                        lemmas.append(word.lemma)
+                        pos.append(word.pos)
+                        ner.append(token.ner)
             amr['lemmas'] = lemmas
             amr['pos'] = pos
             amr['tokens'] = tokens

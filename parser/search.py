@@ -36,13 +36,14 @@ class Hypothesis(object):
 
 class Beam(object):
     """each beam for a test instance"""
-    def __init__(self, beam_size, min_time_step, max_time_step, hypotheses):
+    def __init__(self, beam_size, min_time_step, max_time_step, hypotheses, device=torch.device('cpu')):
         self.beam_size = beam_size
         self.min_time_step = min_time_step
         self.max_time_step = max_time_step
         self.completed_hypotheses = []
         self.steps = 0
         self.hypotheses = hypotheses # hypotheses are the collection of *alive* hypotheses only
+        self.device = device
 
     def merge_score(self, prev_hyp, step):
         # step has two attributes: token and score
@@ -81,7 +82,7 @@ class Beam(object):
         
         # collect new states for selected top candidates  
         _split_state = dict() # key => list of length live_nyp_num (number of selected top candidates)
-        _prev_hyp_idx = torch.tensor([ x[0] for x in candidates]).cuda()
+        _prev_hyp_idx = torch.tensor([ x[0] for x in candidates]).to(self.device)  # cuda()
         for k, v in new_states.items():
             split_dim = 1 if len(v.size()) >= 3 else 0
             _split_state[k] = v.index_select(split_dim, _prev_hyp_idx).split(1, dim=split_dim)
@@ -149,6 +150,8 @@ def search_by_batch(model, beams, mem_dict):
                 concat_hyps[k] = torch.cat(v, 0)
         return concat_hyps, inp
 
+    device = beams[0].device
+
     while True:
         # collect incomplete beams and put all hypotheses together
         hypotheses = []
@@ -167,7 +170,7 @@ def search_by_batch(model, beams, mem_dict):
         
         # collect mem_dict
         cur_mem_dict = dict()
-        indices = torch.tensor(indices).cuda()
+        indices = torch.tensor(indices).to(device)  # cuda()
         for k, v in mem_dict.items():
             if isinstance(v, list): 
                 cur_mem_dict[k] = [v[i] for i in indices]

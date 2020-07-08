@@ -8,6 +8,8 @@ For detailed description of AMR, see http://www.isi.edu/natural-language/amr/a.p
 """
 
 from __future__ import print_function
+
+import json
 from collections import defaultdict
 import sys
 
@@ -426,6 +428,41 @@ class AMR(object):
         attribute_list[0].append(["TOP", node_value_list[0]])
         result_amr = AMR(node_name_list, node_value_list, relation_list, attribute_list)
         return result_amr
+
+    @staticmethod
+    def parse_json(line):
+        amr_json = json.loads(line)
+        node_name_list = [str(node['id']) for node in amr_json['nodes']]
+        node_value_list = [node['label'] for node in amr_json['nodes']]
+        relation_dict = defaultdict(list)
+        attribute_dict = defaultdict(list)
+
+        exceptions = {"prep-on-behalf-of", "prep-out-of", "consist-of"}
+        def update_triple(node_relation_dict, triple):
+            u, r, v = triple
+            if r.endswith("-of") and not r in exceptions:
+                node_relation_dict[v].append((r[:-3], u))
+            elif r == "mod":
+                node_relation_dict[v].append(("domain", u))
+            else:
+                node_relation_dict[u].append((r, v))
+
+        if 'edges' in amr_json:
+            for edge in amr_json['edges']:
+                s,r,t = str(edge['source']), edge['label'], str(edge['target'])
+                update_triple(relation_dict, (s,r,t))
+
+        for node in amr_json['nodes']:
+            if 'properties' in node:
+                rs = node['properties']
+                atts = node['values']
+                for r,att in zip(rs,atts):
+                    update_triple(attribute_dict, (str(node['id']),r,att))
+
+        relation_list = [relation_dict[k] for k in node_name_list]
+        attribute_list = [attribute_dict[k] for k in node_name_list]
+
+        return AMR(node_name_list, node_value_list, relation_list, attribute_list)
 
 # test AMR parsing
 # run by amr.py [file containing AMR]

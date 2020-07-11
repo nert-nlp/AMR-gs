@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 
 def main():
-    amr_file = r'C:\Users\austi\Desktop\Shared Task\mrp\2020\cf\training\amr.mrp'
+    amr_file = r'../../mrp/2020/cf/training/amr.mrp'
 
     nlp = stanza.Pipeline('en', processors='tokenize,pos,lemma,ner')
 

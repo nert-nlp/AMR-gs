@@ -2,8 +2,8 @@ import random
 import torch
 from torch import nn
 import numpy as np
-from parser.AMRGraph import AMRGraph
-from parser.extract import read_file
+from AMRGraph import AMRGraph
+from extract import read_file
 
 PAD, UNK, DUM, NIL, END, CLS = '<PAD>', '<UNK>', '<DUMMY>', '<NULL>', '<END>', '<CLS>'
 GPU_SIZE = 12000 # okay for 8G memory
@@ -14,7 +14,7 @@ class Vocab(object):
         self._priority = dict()
         num_tot_tokens = 0
         num_vocab_tokens = 0
-        for line in open(filename).readlines():
+        for line in open(filename, encoding='utf8').readlines():
             try:
                 token, cnt = line.rstrip('\n').split('\t')
                 cnt = int(cnt)

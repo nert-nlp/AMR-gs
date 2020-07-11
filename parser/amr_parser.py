@@ -3,12 +3,12 @@ from torch import nn
 import torch.nn.functional as F
 import math
 
-from parser.encoder import WordEncoder, ConceptEncoder
-from parser.decoder import DecodeLayer
-from parser.transformer import Transformer, SinusoidalPositionalEmbedding, SelfAttentionMask
-from parser.data import ListsToTensor, ListsofStringToTensor, DUM, NIL, PAD
-from parser.search import Hypothesis, Beam, search_by_batch
-from parser.utils import move_to_device
+from encoder import WordEncoder, ConceptEncoder
+from decoder import DecodeLayer
+from transformer import Transformer, SinusoidalPositionalEmbedding, SelfAttentionMask
+from data import ListsToTensor, ListsofStringToTensor, DUM, NIL, PAD
+from search import Hypothesis, Beam, search_by_batch
+from utils import move_to_device
 
 class Parser(nn.Module):
     def __init__(self, vocabs, word_char_dim, word_dim, pos_dim, ner_dim,

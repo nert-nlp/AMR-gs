@@ -4,7 +4,7 @@ import re
 import random
 from collections import defaultdict
 
-from parser.amr import AMR
+from amr import AMR
 
 number_regexp = re.compile(r'^-?(\d)+(\.\d+)?$')
 abstract_regexp0 = re.compile(r'^([A-Z]+_)+\d+$')

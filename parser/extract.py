@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
+import os
 from collections import Counter
 import json, re
 
-from parser.amr import AMR
-from parser.AMRGraph import AMRGraph, number_regexp
-from parser.AMRGraph import  _is_abs_form 
+from amr import AMR
+from AMRGraph import AMRGraph, number_regexp
+from AMRGraph import  _is_abs_form
 class AMRIO:
 
     def __init__(self):
@@ -19,7 +20,7 @@ class AMRIO:
                 tokens = amr_json['tokens']
                 lemmas = amr_json['lemmas']
                 pos_tags = amr_json['pos']
-                ner_tags = ner_tags['ner']
+                ner_tags = amr_json['ner']
                 myamr = AMRGraph.parse_json(line)
                 yield tokens, lemmas, pos_tags, ner_tags, myamr
 
@@ -81,7 +82,7 @@ def make_vocab(batch_seq, char_level=False):
 
 
 def write_vocab(vocab, path):
-    with open(path, 'w') as fo:
+    with open(os.path.join('vocab',path), 'w', encoding='utf8') as fo:
         for x, y in vocab.most_common():
             fo.write('%s\t%d\n'%(x,y))
 

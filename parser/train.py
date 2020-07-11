@@ -3,74 +3,86 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 
 import argparse, os, random
-from parser.data import Vocab, DataLoader, DUM, END, CLS, NIL
-from parser.parser import Parser
-from parser.work import show_progress
-from parser.extract import LexicalMap
-from parser.adam import AdamWeightDecayOptimizer
-from parser.utils import move_to_device
-from parser.bert_utils import BertEncoderTokenizer, BertEncoder
-from parser.postprocess import PostProcessor
-from parser.work import parse_data
+from data import Vocab, DataLoader, DUM, END, CLS, NIL
+from amr_parser import Parser
+from work import show_progress
+from extract import LexicalMap
+from adam import AdamWeightDecayOptimizer
+from utils import move_to_device
+from bert_utils import BertEncoderTokenizer, BertEncoder
+from postprocess import PostProcessor
+from work import parse_data
 
 def parse_config():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--tok_vocab', type=str)
-    parser.add_argument('--lem_vocab', type=str)
-    parser.add_argument('--pos_vocab', type=str)
-    parser.add_argument('--ner_vocab', type=str)
-    parser.add_argument('--concept_vocab', type=str)
-    parser.add_argument('--predictable_concept_vocab', type=str)
-    parser.add_argument('--rel_vocab', type=str)
-    parser.add_argument('--word_char_vocab', type=str)
-    parser.add_argument('--concept_char_vocab', type=str)
+    # --lem_vocab ${dataset}/vocab/lem_vocab\
+    #                 --pos_vocab  ${dataset}/vocab/pos_vocab\
+    #                 --ner_vocab ${dataset}/vocab/ner_vocab\
+    #                 --concept_vocab ${dataset}/vocab/concept_vocab\
+    #                 --predictable_concept_vocab ${dataset}/vocab/predictable_concept_vocab\
+    #                 --rel_vocab ${dataset}/vocab/rel_vocab\
+    #                 --word_char_vocab ${dataset}/vocab/word_char_vocab\
+    #                 --concept_char_vocab ${dataset}/vocab/concept_char_vocab\
+    #                 --train_data ${dataset}/amr.extended.mrp \
+    #                 --dev_data ${dataset}/amr.extended.mrp  \
+    #                 --with_bert \
+    #                 --bert_path ../bert-base-cased \
+    #                 -
+    parser.add_argument('--tok_vocab', type=str, default='vocab/tok_vocab')
+    parser.add_argument('--lem_vocab', type=str, default='vocab/lem_vocab')
+    parser.add_argument('--pos_vocab', type=str, default='vocab/pos_vocab')
+    parser.add_argument('--ner_vocab', type=str, default='vocab/ner_vocab')
+    parser.add_argument('--concept_vocab', type=str, default='vocab/concept_vocab')
+    parser.add_argument('--predictable_concept_vocab', type=str, default='vocab/predictable_concept_vocab')
+    parser.add_argument('--rel_vocab', type=str, default='vocab/rel_vocab')
+    parser.add_argument('--word_char_vocab', type=str, default='vocab/word_char_vocab')
+    parser.add_argument('--concept_char_vocab', type=str, default='vocab/concept_char_vocab')
     parser.add_argument('--pretrained_file', type=str, default=None)
     parser.add_argument('--with_bert', dest='with_bert', action='store_true')
     parser.add_argument('--bert_path', type=str, default=None)
 
-    parser.add_argument('--word_char_dim', type=int)
-    parser.add_argument('--word_dim', type=int)
-    parser.add_argument('--pos_dim', type=int)
-    parser.add_argument('--ner_dim', type=int)
-    parser.add_argument('--concept_char_dim', type=int)
-    parser.add_argument('--concept_dim', type=int)
-    parser.add_argument('--rel_dim', type=int)
+    parser.add_argument('--word_char_dim', type=int, default=32)
+    parser.add_argument('--word_dim', type=int, default=300)
+    parser.add_argument('--pos_dim', type=int, default=32)
+    parser.add_argument('--ner_dim', type=int, default=16)
+    parser.add_argument('--concept_char_dim', type=int, default=32)
+    parser.add_argument('--concept_dim', type=int, default=300)
+    parser.add_argument('--rel_dim', type=int, default=100)
 
-    parser.add_argument('--cnn_filters', type=int, nargs = '+')
-    parser.add_argument('--char2word_dim', type=int)
-    parser.add_argument('--char2concept_dim', type=int)
+    parser.add_argument('--cnn_filters', type=int, nargs = '+', default=(3,256))
+    parser.add_argument('--char2word_dim', type=int, default=128)
+    parser.add_argument('--char2concept_dim', type=int, default=128)
+    #                 --cnn_filter 3 256\
+
+    parser.add_argument('--embed_dim', type=int, default=512)
+    parser.add_argument('--ff_embed_dim', type=int, default=1024)
+    parser.add_argument('--num_heads', type=int, default=8)
+    parser.add_argument('--snt_layers', type=int, default=4)
+    parser.add_argument('--graph_layers', type=int, default=2)
+    parser.add_argument('--inference_layers', type=int, default=4)
+
+    parser.add_argument('--dropout', type=float, default=0.2)
+    parser.add_argument('--unk_rate', type=float, default=0.33)
 
 
-    parser.add_argument('--embed_dim', type=int)
-    parser.add_argument('--ff_embed_dim', type=int)
-    parser.add_argument('--num_heads', type=int)
-    parser.add_argument('--snt_layers', type=int)
-    parser.add_argument('--graph_layers', type=int)
-    parser.add_argument('--inference_layers', type=int)
-
-    parser.add_argument('--dropout', type=float)
-    parser.add_argument('--unk_rate', type=float)
-
-
-    parser.add_argument('--epochs', type=int)
+    parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--train_data', type=str)
     parser.add_argument('--dev_data', type=str)
-    parser.add_argument('--train_batch_size', type=int)
-    parser.add_argument('--batches_per_update', type=int)
-    parser.add_argument('--dev_batch_size', type=int)
-    parser.add_argument('--lr_scale', type=float)
-    parser.add_argument('--warmup_steps', type=int)
+    parser.add_argument('--train_batch_size', type=int, default=4444)
+    parser.add_argument('--batches_per_update', type=int, default=4)
+    parser.add_argument('--dev_batch_size', type=int, default=4444)
+    parser.add_argument('--lr_scale', type=float, default=1)
+    parser.add_argument('--warmup_steps', type=int, default=2000)
     parser.add_argument('--resume_ckpt', type=str, default=None)
-    parser.add_argument('--ckpt', type=str)
-    parser.add_argument('--print_every', type=int)
-    parser.add_argument('--eval_every', type=int)
+    parser.add_argument('--ckpt', type=str, default='ckpt')
+    parser.add_argument('--print_every', type=int, default=100)
+    parser.add_argument('--eval_every', type=int, default=1000)
 
-
-    parser.add_argument('--world_size', type=int)
-    parser.add_argument('--gpus', type=int)
-    parser.add_argument('--MASTER_ADDR', type=str)
-    parser.add_argument('--MASTER_PORT', type=str)
-    parser.add_argument('--start_rank', type=int)
+    parser.add_argument('--world_size', type=int, default=1)
+    parser.add_argument('--gpus', type=int, default=1)
+    parser.add_argument('--MASTER_ADDR', type=str, default='localhost')
+    parser.add_argument('--MASTER_PORT', type=str, default='29505')
+    parser.add_argument('--start_rank', type=int, default=0)
 
     return parser.parse_args()
 
@@ -124,10 +136,15 @@ def main(local_rank, args):
             p.requires_grad = False
 
     torch.manual_seed(19940117)
-    torch.cuda.manual_seed_all(19940117)
     random.seed(19940117)
-    torch.cuda.set_device(local_rank)
-    device = torch.device('cuda', local_rank)
+    use_gpu = True
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(19940117)
+        torch.cuda.set_device(local_rank)
+        device = torch.device('cuda', local_rank)
+    else:
+        device = torch.device('cpu')
+        use_gpu = False
     
     model = Parser(vocabs,
             args.word_char_dim, args.word_dim, args.pos_dim, args.ner_dim,
@@ -143,7 +160,8 @@ def main(local_rank, args):
         torch.cuda.manual_seed_all(19940117 + dist.get_rank())
         random.seed(19940117+dist.get_rank())
 
-    model = model.cuda(local_rank)
+    if use_gpu:
+        model = model.cuda(local_rank)
     dev_data = DataLoader(vocabs, lexical_mapping, args.dev_data, args.dev_batch_size, for_train=False)
     pp = PostProcessor(vocabs['rel']) 
 

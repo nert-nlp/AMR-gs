@@ -3,12 +3,11 @@ import re
 import networkx as nx
 import numpy as np
 
-from parser.AMRGraph import is_attr_or_abs_form, need_an_instance
+from AMRGraph import is_attr_or_abs_form, need_an_instance
 
 
 class PostProcessor(object):
     def __init__(self, rel_vocab):
-        self.amr = penman.AMRCodec()
         self.rel_vocab = rel_vocab
 
     def to_triple(self, res_concept, res_relation):
@@ -60,7 +59,7 @@ class PostProcessor(object):
         return ret
 
     def get_string(self, x):
-        return self.amr.encode(penman.Graph(x), top=x[0][0])
+        return penman.encode(penman.Graph(x), top=x[0][0])
     
     def postprocess(self, concept, relation):
         mstr = self.get_string(self.to_triple(concept, relation))

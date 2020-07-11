@@ -1,6 +1,6 @@
 import torch
-from parser.data import END, UNK
-from parser.AMRGraph import is_attr_or_abs_form
+from data import END, UNK
+from AMRGraph import is_attr_or_abs_form
 """
  Beam search by batch
  need model has two functions:

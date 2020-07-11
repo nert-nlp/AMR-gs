@@ -92,7 +92,7 @@ class Parser(nn.Module):
             init_state_dict = {}
             init_hyp = Hypothesis(init_state_dict, [DUM], 0.)
             bsz = word_repr.size(1)
-            beams = [ Beam(beam_size, min_time_step, max_time_step, [init_hyp]) for i in range(bsz)]
+            beams = [ Beam(beam_size, min_time_step, max_time_step, [init_hyp], device=self.device) for i in range(bsz)]
             search_by_batch(self, beams, mem_dict)
         return beams
 

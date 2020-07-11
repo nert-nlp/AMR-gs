@@ -74,8 +74,8 @@ def parse_data(model, pp, data, input_file, output_file, beam_size=8, alpha=0.6,
     match(output_file, input_file)
     print ('write down %d amrs'%tot)
 
-def load_ckpt_without_bert(model, test_model):
-    ckpt = torch.load(test_model)['model']
+def load_ckpt_without_bert(model, test_model, device=torch.device('cpu')):
+    ckpt = torch.load(test_model, map_location=device)['model']
     for k, v in model.state_dict().items():
         if k.startswith('bert_encoder'):
             ckpt[k] = v
@@ -85,16 +85,21 @@ if __name__ == "__main__":
 
     args = parse_config()
 
+    if torch.cuda.is_available():
+        device = torch.device('cuda', args.device)
+    else:
+        device = torch.device('cpu')
+
     test_models = []
     if os.path.isdir(args.load_path):
         for file in os.listdir(args.load_path):
             fname = os.path.join(args.load_path, file)
             if os.path.isfile(fname):
                 test_models.append(fname)
-        model_args = torch.load(fname)['args']
+        model_args = torch.load(fname, map_location=device)['args']
     else:
         test_models.append(args.load_path)
-        model_args = torch.load(args.load_path)['args']
+        model_args = torch.load(args.load_path, map_location=device)['args']
 
     vocabs = dict()
 
@@ -116,11 +121,7 @@ if __name__ == "__main__":
         bert_encoder = BertEncoder.from_pretrained(model_args.bert_path)
         vocabs['bert_tokenizer'] = bert_tokenizer
     
-    if args.device < 0:
-        device = torch.device('cpu')
-    else:
-        device = torch.device('cuda', args.device)
-
+    
     model = Parser(vocabs,
             model_args.word_char_dim, model_args.word_dim, model_args.pos_dim, model_args.ner_dim,
             model_args.concept_char_dim, model_args.concept_dim,
@@ -133,11 +134,11 @@ if __name__ == "__main__":
     another_test_data = DataLoader(vocabs, lexical_mapping, args.test_data, args.test_batch_size, for_train=False)
     for test_model in test_models:
         print (test_model)
-        batch = int(re.search(r'batch([0-9])+', test_model)[0][5:])
-        epoch = int(re.search(r'epoch([0-9])+', test_model)[0][5:])
+        # batch = int(re.search(r'batch([0-9])+', test_model)[0][5:])
+        # epoch = int(re.search(r'epoch([0-9])+', test_model)[0][5:])
         
-        load_ckpt_without_bert(model, test_model)
-        model = model.cuda()
+        load_ckpt_without_bert(model, test_model, device=device)
+        model = model.to(device)  # cuda()
         model.eval()
 
         #loss = show_progress(model, test_data)

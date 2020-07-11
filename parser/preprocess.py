@@ -4,13 +4,12 @@ import stanza
 from tqdm import tqdm
 
 
-def main():
-    amr_file = r'../../mrp/2020/cf/training/amr.mrp'
-
+def main(input_file):
+    # amr_file = r'C:\Users\austi\Desktop\Shared Task\mrp\2020\cf\training\amr.mrp'
     nlp = stanza.Pipeline('en', processors='tokenize,pos,lemma,ner')
 
     amrs = []
-    with open(amr_file, 'r', encoding='utf8') as f:
+    with open(input_file, 'r', encoding='utf8') as f:
         lines = f.readlines()
         for line in tqdm(lines):
             amr = json.loads(line)
@@ -33,8 +32,8 @@ def main():
             amr['ner'] = ner
             amrs.append(amr)
 
-    amr_file2 = amr_file.replace('.mrp','.extended.mrp')
-    with open(amr_file2, 'w+', encoding='utf8') as f:
+    output_file = input_file.replace('.mrp','.features.mrp')
+    with open(output_file, 'w+', encoding='utf8') as f:
         for amr in amrs:
             line = json.dumps(amr)+'\n'
             f.write(line)
@@ -42,4 +41,8 @@ def main():
     print()
 
 if __name__=='__main__':
-    main()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input', type=str)
+    args = parser.parse_args()
+    main(args.input)

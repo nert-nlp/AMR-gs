@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import re
-from parser.transformer import Embedding
+from transformer import Embedding
 
 def AMREmbedding(vocab, embedding_dim, pretrained_file=None, amr=False, dump_file=None):
     if pretrained_file is None:

@@ -13,7 +13,7 @@ def main():
     amrs = []
     with open(amr_file, 'r', encoding='utf8') as f:
         for line in f:
-            amr = AMR.parse_json(line)
+            amr = json.loads(line)
             amrs.append(amr)
 
     drgs = []

@@ -19,7 +19,7 @@ class AMRIO:
                 tokens = amr_json['tokens']
                 lemmas = amr_json['lemmas']
                 pos_tags = amr_json['pos']
-                ner_tags = ner_tags['ner']
+                ner_tags = amr_json['ner']
                 myamr = AMRGraph.parse_json(line)
                 yield tokens, lemmas, pos_tags, ner_tags, myamr
 
@@ -89,6 +89,7 @@ import argparse
 def parse_config():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_data', type=str)
+    parser.add_argument('--vocab_dir', type=str)
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -129,13 +130,17 @@ if __name__ == "__main__":
     rel_vocab = make_vocab(rel)
 
     print ('make vocabularies')
-    write_vocab(token_vocab, 'tok_vocab')
-    write_vocab(token_char_vocab, 'word_char_vocab')
-    write_vocab(lemma_vocab, 'lem_vocab')
-    write_vocab(lemma_char_vocab, 'lem_char_vocab')
-    write_vocab(pos_vocab, 'pos_vocab')
-    write_vocab(ner_vocab, 'ner_vocab')
-    write_vocab(conc_vocab, 'concept_vocab')
-    write_vocab(conc_char_vocab, 'concept_char_vocab')
-    write_vocab(predictable_conc_vocab, 'predictable_concept_vocab')
-    write_vocab(rel_vocab, 'rel_vocab')
+
+    import os
+    os.makedirs(args.vocab_dir)
+
+    write_vocab(token_vocab, f'{args.vocab_dir}/tok_vocab')
+    write_vocab(token_char_vocab, f'{args.vocab_dir}/word_char_vocab')
+    write_vocab(lemma_vocab, f'{args.vocab_dir}/lem_vocab')
+    write_vocab(lemma_char_vocab, f'{args.vocab_dir}/lem_char_vocab')
+    write_vocab(pos_vocab, f'{args.vocab_dir}/pos_vocab')
+    write_vocab(ner_vocab, f'{args.vocab_dir}/ner_vocab')
+    write_vocab(conc_vocab, f'{args.vocab_dir}/concept_vocab')
+    write_vocab(conc_char_vocab, f'{args.vocab_dir}/concept_char_vocab')
+    write_vocab(predictable_conc_vocab, f'{args.vocab_dir}/predictable_concept_vocab')
+    write_vocab(rel_vocab, f'{args.vocab_dir}/rel_vocab')

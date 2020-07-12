@@ -78,6 +78,7 @@ def ListsToTensor(xs, vocab=None, local_vocabs=None, unk_rate=0.):
         y = toIdx(x, i) + [pad]*(max_len-len(x))
         ys.append(y)
     data = np.transpose(np.array(ys))
+    data = torch.from_numpy(data).long().contiguous()
     return data
 
 def ListsofStringToTensor(xs, vocab, max_string_len=20):
@@ -92,6 +93,7 @@ def ListsofStringToTensor(xs, vocab, max_string_len=20):
         ys.append(zs)
 
     data = np.transpose(np.array(ys), (1, 0, 2))
+    data = torch.from_numpy(data).long().contiguous()
     return data
 
 def ArraysToTensor(xs):
@@ -103,7 +105,7 @@ def ArraysToTensor(xs):
         slicing_shape = list(x.shape)
         slices = tuple([slice(i, i+1)]+[slice(0, x) for x in slicing_shape])
         data[slices] = x
-    #tensor = torch.from_numpy(data).long()
+    data = torch.from_numpy(data).long().contiguous()
     return data
 
 def batchify(data, vocabs, unk_rate=0.):
@@ -133,6 +135,7 @@ def batchify(data, vocabs, unk_rate=0.):
 
     out_conc_len, bsz = _concept_out.shape
     _rel = np.full((1+out_conc_len, bsz, out_conc_len), vocabs['rel'].token2idx(PAD))
+    _rel = torch.from_numpy(_rel).long()
     # v: [<dummy>, concept_0, ..., concept_l, ..., concept_{n-1}, <end>] u: [<dummy>, concept_0, ..., concept_l, ..., concept_{n-1}]
     
     for bidx, (x, y) in enumerate(zip(edge, concept)):

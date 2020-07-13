@@ -3,7 +3,7 @@
 set -e
 
 
-data_dir=$1
+data_dir=MRP20/mrp/2020/cf
 amr_train_data=${data_dir}/training/amr.mrp
 drg_train_data=${data_dir}/training/drg.mrp
 eds_train_data=${data_dir}/training/eds.mrp
@@ -25,13 +25,42 @@ ucca_dev_data=${data_dir}/validation/ucca.mrp
 #amr_dir=$1
 
 
-python -u -m parser.preprocess ${amr_train_data}
-python -u -m parser.preprocess ${drg_train_data}
-python -u -m parser.preprocess ${eds_train_data}
-python -u -m parser.preprocess ${ptg_train_data}
-python -u -m parser.preprocess ${ucca_train_data}
-python -u -m parser.preprocess ${amr_dev_data}
-python -u -m parser.preprocess ${drg_dev_data}
-python -u -m parser.preprocess ${eds_dev_data}
-python -u -m parser.preprocess ${ptg_dev_data}
-python -u -m parser.preprocess ${ucca_dev_data}
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${amr_train_data}"
+
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${drg_train_data}"
+
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${eds_train_data}"
+
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${ptg_train_data}"
+
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${ucca_train_data}"
+
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${amr_dev_data}"
+
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${drg_dev_data}"
+
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${eds_dev_data}"
+
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${ptg_dev_data}"
+
+sbatch --gres="gpu:1" \
+       --time="05:00:00" \
+       --wrap="python -u -m parser.preprocess ${ucca_dev_data}"

@@ -4,7 +4,7 @@ import re
 import random
 from collections import defaultdict
 
-from amr import AMR
+from .amr import AMR
 
 number_regexp = re.compile(r'^-?(\d)+(\.\d+)?$')
 abstract_regexp0 = re.compile(r'^([A-Z]+_)+\d+$')
@@ -39,31 +39,31 @@ class AMRGraph(object):
         self.abstract_concepts = dict()
         for _, name, concept in instance_triple:
             if is_attr_or_abs_form(concept):
-                if _is_abs_form(concept):
-                    self.abstract_concepts[name] = concept
-                else:
-                    print ('bad concept', _, name, concept)
+#                if _is_abs_form(concept):
+                self.abstract_concepts[name] = concept
+#                else:
+#                    print ('bad concept', _, name, concept)
             self.name2concept[name] = concept
             self.nodes.add(name)
         for rel, concept, value in attribute_triple:
-            if rel == 'TOP':
-                continue
-            # discard some empty names
-            if rel == 'name' and discard_regexp.match(value):
-                continue
-            # abstract concept can't have an attribute
-            if concept in self.abstract_concepts:
-                print (rel, self.abstract_concepts[concept], value, "abstract concept cannot have an attribute")
-                continue
+#            if rel == 'TOP':
+#                continue
+#            # discard some empty names
+#            if rel == 'name' and discard_regexp.match(value):
+#                continue
+#            # abstract concept can't have an attribute
+#            if concept in self.abstract_concepts:
+#                print (rel, self.abstract_concepts[concept], value, "abstract concept cannot have an attribute")
+#                continue
             name = "%s_attr_%d"%(value, len(self.name2concept))
             if not _is_attr_form(value):
-                if _is_abs_form(value):
-                    self.abstract_concepts[name] = value
-                else:
-                    print ('bad attribute', rel, concept, value)
-                    continue
+#                if _is_abs_form(value):
+                self.abstract_concepts[name] = value
+#                else:
+#                    print ('bad attribute', rel, concept, value)
+#                    continue
             self.name2concept[name] = value
-            self._add_edge(rel, concept, name)
+            self._add_edge(f'{rel}_PROPERTY_', concept, name)
         for rel, head, tail in relation_triple:
             self._add_edge(rel, head, tail)
 
@@ -129,7 +129,7 @@ class AMRGraph(object):
     def parse_json(line):
         amr_json = json.loads(line)
         node_name_list = [str(node['id']) for node in amr_json['nodes']]
-        node_value_list = [node['label'] for node in amr_json['nodes']]
+        node_value_list = [node.get('label', 'NO_LABEL') for i, node in enumerate(amr_json['nodes'])]
         relation_dict = defaultdict(list)
         attribute_dict = defaultdict(list)
 
@@ -144,8 +144,8 @@ class AMRGraph(object):
                 node_relation_dict[u].append((r, v))
 
         if 'edges' in amr_json:
-            for edge in amr_json['edges']:
-                s,r,t = str(edge['source']), edge['label'], str(edge['target'])
+            for i, edge in enumerate(amr_json['edges']):
+                s,r,t = str(edge['source']), edge.get('label', 'NO_LABEL'), str(edge['target'])
                 update_triple(relation_dict, (s,r,t))
 
         for node in amr_json['nodes']:

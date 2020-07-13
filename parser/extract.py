@@ -4,9 +4,11 @@ import os
 from collections import Counter
 import json, re
 
-from amr import AMR
-from AMRGraph import AMRGraph, number_regexp
-from AMRGraph import  _is_abs_form
+from .amr import AMR
+from .AMRGraph import AMRGraph, number_regexp
+from .AMRGraph import  _is_abs_form
+
+
 class AMRIO:
 
     def __init__(self):
@@ -21,8 +23,10 @@ class AMRIO:
                 lemmas = amr_json['lemmas']
                 pos_tags = amr_json['pos']
                 ner_tags = amr_json['ner']
+                # props = {k: v for k, v in zip(amr_json.get('properties', []), amr_json.get('values', []))}
                 myamr = AMRGraph.parse_json(line)
                 yield tokens, lemmas, pos_tags, ner_tags, myamr
+
 
 class LexicalMap(object):
 
@@ -64,6 +68,7 @@ def read_file(filename):
         lemma.append(_lem)
         pos.append(_pos)
         ner.append(_ner)
+        # props.append(_props.items())
         amrs.append(_myamr)
     print ('read from %s, %d amrs'%(filename, len(token)))
     return amrs, token, lemma, pos, ner
@@ -82,7 +87,7 @@ def make_vocab(batch_seq, char_level=False):
 
 
 def write_vocab(vocab, path):
-    with open(os.path.join('vocab',path), 'w', encoding='utf8') as fo:
+    with open(path, 'w', encoding='utf8') as fo:
         for x, y in vocab.most_common():
             fo.write('%s\t%d\n'%(x,y))
 
@@ -101,6 +106,7 @@ if __name__ == "__main__":
     # collect concepts and relations
     conc = []
     rel = []
+    prop = []
     predictable_conc = []
     for i in range(10):
         # run 10 times random sort to get the priorities of different types of edges
@@ -115,7 +121,17 @@ if __name__ == "__main__":
             if i == 0:
                 predictable_conc.append([ c for c in concept if c not in lexical_concepts])
                 conc.append(concept)
-            rel.append([e[-1] for e in edge])
+
+            _prop = []
+            _rel = []
+            for (a, b, r) in edge:
+                if r.endswith('_PROPERTY_'):
+                    _prop.append(f'{concept[b]} {r} {concept[a]}')
+                else:
+                    _rel.append(r)
+            if i == 0:
+                prop.append(_prop)
+            rel.append(_rel)
 
     # make vocabularies
     token_vocab, token_char_vocab = make_vocab(token, char_level=True)
@@ -129,11 +145,15 @@ if __name__ == "__main__":
     num_conc = sum(len(x) for x in conc)
     print ('predictable concept coverage', num_predictable_conc, num_conc, num_predictable_conc/num_conc)
     rel_vocab = make_vocab(rel)
+    prop_vocab = make_vocab(prop)
 
     print ('make vocabularies')
 
     import os
-    os.makedirs(args.vocab_dir)
+    try:
+        os.makedirs(args.vocab_dir)
+    except FileExistsError:
+        pass
 
     write_vocab(token_vocab, f'{args.vocab_dir}/tok_vocab')
     write_vocab(token_char_vocab, f'{args.vocab_dir}/word_char_vocab')
@@ -141,6 +161,7 @@ if __name__ == "__main__":
     write_vocab(lemma_char_vocab, f'{args.vocab_dir}/lem_char_vocab')
     write_vocab(pos_vocab, f'{args.vocab_dir}/pos_vocab')
     write_vocab(ner_vocab, f'{args.vocab_dir}/ner_vocab')
+    write_vocab(prop_vocab, f'{args.vocab_dir}/prop_vocab')
     write_vocab(conc_vocab, f'{args.vocab_dir}/concept_vocab')
     write_vocab(conc_char_vocab, f'{args.vocab_dir}/concept_char_vocab')
     write_vocab(predictable_conc_vocab, f'{args.vocab_dir}/predictable_concept_vocab')

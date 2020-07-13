@@ -126,7 +126,7 @@ if __name__ == "__main__":
             _rel = []
             for (a, b, r) in edge:
                 if r.endswith('_PROPERTY_'):
-                    _prop.append(f'{concept[b]} {r} {concept[a]}')
+                    _prop.append(f'{concept[b]} {r[:-10]} {concept[a]}')
                 else:
                     _rel.append(r)
             if i == 0:

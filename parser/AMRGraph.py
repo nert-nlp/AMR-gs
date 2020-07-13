@@ -109,7 +109,7 @@ class AMRGraph(object):
                     queue.append(des)
                     visited.add(des)
         not_connected = len(queue) != len(self.nodes)
-        assert (not not_connected)
+        # assert (not not_connected)
         name2pos = dict(zip(queue, range(len(queue))))
 
         visited = set()

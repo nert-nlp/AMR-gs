@@ -4,9 +4,9 @@ import os
 from collections import Counter
 import json, re
 
-from .amr import AMR
-from .AMRGraph import AMRGraph, number_regexp
-from .AMRGraph import  _is_abs_form
+# from .amr import AMR
+from AMRGraph import AMRGraph, number_regexp
+# from .AMRGraph import  _is_abs_form
 
 
 class AMRIO:

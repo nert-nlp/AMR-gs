@@ -40,6 +40,7 @@ def parse_config():
     parser.add_argument('--pretrained_file', type=str, default=None)
     parser.add_argument('--with_bert', dest='with_bert', action='store_true')
     parser.add_argument('--bert_path', type=str, default=None)
+    parser.add_argument('--data_path', type=str, default=None)
 
     parser.add_argument('--word_char_dim', type=int, default=32)
     parser.add_argument('--word_dim', type=int, default=300)
@@ -86,6 +87,7 @@ def parse_config():
 
     return parser.parse_args()
 
+
 def average_gradients(model):
     size = float(dist.get_world_size())
     for param in model.parameters():
@@ -107,15 +109,15 @@ def data_proc(data, queue):
 
 def load_vocabs(args):
     vocabs = dict()
-    vocabs['tok'] = Vocab(args.tok_vocab, 5, [CLS])
-    vocabs['lem'] = Vocab(args.lem_vocab, 5, [CLS])
-    vocabs['pos'] = Vocab(args.pos_vocab, 5, [CLS])
-    vocabs['ner'] = Vocab(args.ner_vocab, 5, [CLS])
-    vocabs['predictable_concept'] = Vocab(args.predictable_concept_vocab, 5, [DUM, END])
-    vocabs['concept'] = Vocab(args.concept_vocab, 5, [DUM, END])
-    vocabs['rel'] = Vocab(args.rel_vocab, 50, [NIL])
-    vocabs['word_char'] = Vocab(args.word_char_vocab, 100, [CLS, END])
-    vocabs['concept_char'] = Vocab(args.concept_char_vocab, 100, [CLS, END])
+    vocabs['tok'] = Vocab(os.path.join(args.data_path, args.tok_vocab), 5, [CLS])
+    vocabs['lem'] = Vocab(os.path.join(args.data_path, args.lem_vocab), 5, [CLS])
+    vocabs['pos'] = Vocab(os.path.join(args.data_path, args.pos_vocab), 5, [CLS])
+    vocabs['ner'] = Vocab(os.path.join(args.data_path, args.ner_vocab), 5, [CLS])
+    vocabs['predictable_concept'] = Vocab(os.path.join(args.data_path, args.predictable_concept_vocab), 5, [DUM, END])
+    vocabs['concept'] = Vocab(os.path.join(args.data_path, args.concept_vocab), 5, [DUM, END])
+    vocabs['rel'] = Vocab(os.path.join(args.data_path, args.rel_vocab), 50, [NIL])
+    vocabs['word_char'] = Vocab(os.path.join(args.data_path, args.word_char_vocab), 100, [CLS, END])
+    vocabs['concept_char'] = Vocab(os.path.join(args.data_path, args.concept_char_vocab), 100, [CLS, END])
     lexical_mapping = LexicalMap()
     bert_encoder = None
     if args.with_bert:
@@ -128,6 +130,14 @@ def load_vocabs(args):
     return vocabs, lexical_mapping
 
 def main(local_rank, args):
+    if not args.data_path:
+        args.data_path = ''
+
+    if args.data_path:
+        args.train_data = os.path.join(args.data_path, args.train_data)
+        args.dev_data = os.path.join(args.data_path, args.dev_data)
+        # args.bert_path = os.path.join(args.data_path, args.bert_path)
+
     vocabs, lexical_mapping = load_vocabs(args)
     bert_encoder = None
     if args.with_bert:
@@ -184,7 +194,6 @@ def main(local_rank, args):
         optimizer.load_state_dict(ckpt['optimizer'])
         batches_acm = ckpt['batches_acm']
         del ckpt
-
 
     train_data = DataLoader(vocabs, lexical_mapping, args.train_data, args.train_batch_size, for_train=True)
     train_data.set_unk_rate(args.unk_rate)
